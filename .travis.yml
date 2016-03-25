@@ -12,3 +12,6 @@ notifications:
 script:
  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
  - julia --inline=no -e 'Pkg.clone(pwd()); Pkg.build("FixedSizeDictionaries"); Pkg.test("FixedSizeDictionaries"; coverage=true)'
+
+after_success:
+  - julia -e 'cd(Pkg.dir("FixedSizeDictionaries")); Pkg.add("Coverage"); using Coverage; Coveralls.submit(process_folder()); Codecov.submit(process_folder())'
