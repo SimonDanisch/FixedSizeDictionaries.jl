@@ -1,6 +1,17 @@
+
+[![Build Status](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl.svg?branch=master)](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl)
+
 # FixedSizeDictionaries
 
-## Exported
+Library which implements a FixedSize variant of Dictionaries.
+These can be stack allocated and have `O(1)` indexing performance without boundcheck
+It implements most parts of the `Base.Dict` interface.
+This package is usefull, when you basically want anonymous composite types.
+You should be a bit carefull with generating a lot of FixedSizeDict's, since
+it will compile a unique set of functions for every field of a Dict.
+
+
+## Automatic generated API docs:
 
 ---
 
@@ -105,4 +116,3 @@ generates the expression to acces a field of a dict via a Val{Symbol}
 
 *source:*
 [FixedSizeDictionaries/src/core.jl:138](https://github.com/SimonDanisch/FixedSizeDictionaries.jl/tree/1822b7619c5e50d427aad995057f6931a72a2f54/src/core.jl#L138)
-
