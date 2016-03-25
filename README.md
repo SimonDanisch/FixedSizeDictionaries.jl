@@ -13,6 +13,43 @@ This package is usefull, when you basically want anonymous composite types.
 You should be a bit carefull with generating a lot of FixedSizeDict's, since
 it will compile a unique set of functions for every field of a Dict.
 
+Usage: 
+
+```Julia
+    # constructors:
+    kvdict = FixedKeyValueDict((:a => 22, :b => 3f0, :c => 3f0))
+    FixedKeyValueDict(((:a, 22), (:b, 3f0), (:c, 3f0)))
+    FixedKeyValueDict(:a => 22, :b => 3f0, :c => 3f0)
+    FixedKeyValueDict((:a, :b, :c), (22, 3f0, 3f0))
+    FixedKeyValueDict(Dict(:a => 22, :b => 3f0, :c => 3f0))
+    @get(kvdict.a) == 22
+    @get(kvdict.b) == 3f0
+    @get(kvdict.c) == 3f0
+    keys(kvdict) == (Val{:a}, Val{:b}, Val{:c})
+    values(kvdict) == (22, 3f0, 3f0)
+
+    val = get(kvdict, Val{:a}) do
+        "default"
+    end
+    val == 22
+    val = get(kvdict, Val{:Y}) do
+        "default"
+    end
+    val == "default"
+    
+    kvdict = FixedKeyDict((:a => 22, :b => 3f0, :c => 3f0))
+    kvdict == FixedKeyDict(((:a, 22), (:b, 3f0), (:c, 3f0)))
+    kvdict == FixedKeyDict(:a => 22, :b => 3f0, :c => 3f0)
+    kvdict == FixedKeyDict((:a, :b, :c), [22, 3f0, 3f0])
+    kvdict == FixedKeyDict(Dict(:a => 22, :b => 3f0, :c => 3f0))
+
+    # same functions as FixedKeyValueDict plus:
+
+    @get kvdict.a = 10
+    values(kvdict) == (10, 3f0, 3f0)
+    
+```
+
 
 ## Automatic generated API docs:
 
