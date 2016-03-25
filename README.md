@@ -1,7 +1,8 @@
 
 [![Build Status](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl.svg?branch=master)](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl)
 [![Build status](https://ci.appveyor.com/api/projects/status/rug74qwk1dbl62wx?svg=true)](https://ci.appveyor.com/project/SimonDanisch/fixedsizedictionaries-jl)
-
+[![codecov.io](https://codecov.io/github/SimonDanisch/FixedSizeDictionaries.jl/coverage.svg?branch=master)](https://codecov.io/github/SimonDanisch/FixedSizeDictionaries.jl?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/SimonDanisch/FixedSizeDictionaries.jl/badge.svg?branch=master)](https://coveralls.io/github/SimonDanisch/FixedSizeDictionaries.jl?branch=master)
 
 # FixedSizeDictionaries
 
