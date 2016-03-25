@@ -1,5 +1,7 @@
 
 [![Build Status](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl.svg?branch=master)](https://travis-ci.org/SimonDanisch/FixedSizeDictionaries.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/rug74qwk1dbl62wx?svg=true)](https://ci.appveyor.com/project/SimonDanisch/fixedsizedictionaries-jl)
+
 
 # FixedSizeDictionaries
 
