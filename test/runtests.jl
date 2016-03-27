@@ -1,5 +1,5 @@
 using FixedSizeDictionaries
-using Base.Test
+using BaseTestNext
 
 
 function test_fixedkeyvalue(kvdict)
