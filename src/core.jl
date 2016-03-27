@@ -6,13 +6,15 @@ abstract AbstractFixedSizeDict{Keys}
 """
 Dictionary types which keys and values are fixed at creation time
 """
-immutable FixedKeyValueDict{Keys<:Tuple, Values<:Tuple} <: AbstractFixedSizeDict{Keys}
+immutable FixedKeyValueDict{Keys, Values<:Tuple} <: AbstractFixedSizeDict{Keys}
+    keys::Keys
     values::Values
 end
 """
 Dictionary types which keys are fixed at creation time
 """
-immutable FixedKeyDict{Keys<:Tuple, Values<:AbstractVector} <: AbstractFixedSizeDict{Keys}
+immutable FixedKeyDict{Keys, Values<:AbstractVector} <: AbstractFixedSizeDict{Keys}
+    keys::Keys
     values::Values
 end
 
@@ -30,8 +32,8 @@ Constructor for a list of keys together with a list of values which should have 
 """
 function FixedKeyValueDict{N}(keys::NTuple{N, Symbol}, values::NTuple{N, Any})
     # TODO enforce unique keys?!
-    keyparams = Tuple{keys...}
-    FixedKeyValueDict{keyparams, typeof(values)}(values)
+    keys = map(k->Val{k}(), keys)
+    FixedKeyValueDict(keys, values)
 end
 
 """
@@ -40,10 +42,9 @@ Arbitrary data structures of length 2 can be used
 """
 function FixedKeyValueDict(key_values)
     kv = tuple(key_values...) # needs to be a tuple, since both key and value needs to be a tuple
-    keys = map(first, kv)
+    keys = map(k->Val{first(k)}(), kv)
     values = map(last, kv)
-    keyparams = Tuple{keys...}
-    FixedKeyValueDict{keyparams, typeof(values)}(values)
+    FixedKeyValueDict(keys, values)
 end
 
 
@@ -52,8 +53,8 @@ end
 Constructor for a list of keys together with a list of values which should have the same length
 """
 function FixedKeyDict{N}(keys::NTuple{N, Symbol}, values::AbstractVector)
-    keyparams = Tuple{keys...}
-    FixedKeyDict{keyparams, typeof(values)}(values)
+    keys = map(k->Val{k}(), keys)
+    FixedKeyDict(keys, values)
 end
 
 """
@@ -62,32 +63,39 @@ Arbitrary data structures of length 2 can be used
 """
 function FixedKeyDict(key_values)
     kv = collect(key_values) # needs collect for some datastructures like Dict
-    keys = ntuple(length(kv)) do i
-        first(kv[i])
+    keys = ntuple(length(kv)) do i # ntuple, to always get a tuple
+        Val{first(kv[i])}()
     end
-    values = [v for (k,v) in kv] # for comprehension to always get a Vector
-    keyparams = Tuple{keys...}
-    FixedKeyDict{keyparams, typeof(values)}(values)
+    values = [v for (k,v) in kv] # for-comprehension to always get a Vector
+    FixedKeyDict(keys, values)
 end
 
+
+keys{T<:AbstractFixedSizeDict}(fsd::T) = fsd.keys
 # this is a generated function, since T.parameters results in the code to be slow otherwise
 @generated function keys{T<:AbstractFixedSizeDict}(::Type{T})
-    ks = [:(Val{$(Expr(:quote, sym))}) for sym in T.parameters[1].parameters]
+    ks = map(x-> x(), T.parameters[1].parameters)
     :(tuple($(ks...)))
 end
-
-keys{T<:AbstractFixedSizeDict}(::T) = keys(T)
-values(x::AbstractFixedSizeDict) = x.values
-length(x::AbstractFixedSizeDict) = length(x.values)
+# use @generated to do field lookup at compile time instead of runtime
+@generated function key2index{Keys, Key}(x::AbstractFixedSizeDict{Keys}, k::Val{Key})
+    index = findfirst(Keys.parameters, k)
+    index == 0 && throw(KeyError("key $Key not found in $x"))
+    :($index)
+end
 # also a generated function, since we can inline the result for every type, which
 # doesn't happen otherwise
-@generated function haskey{T<:AbstractFixedSizeDict, Key}(sd::T, ::Type{Val{Key}})
-    :($(Val{Key} in keys(sd)))
+@generated function haskey{Keys, Key}(sd::AbstractFixedSizeDict{Keys}, ::Key)
+    :($(Key in Keys.parameters))
 end
 
+
+values(x::AbstractFixedSizeDict) = x.values
+length(x::AbstractFixedSizeDict) = length(x.values)
+
+
 function Base.start(x::AbstractFixedSizeDict)
-    ks = keys(x)
-    (1, ks) # we pass around the keys so that we don't have to get them multiple times
+    (1, keys(x)) # we pass around the keys so that we don't have to get them multiple times
 end
 function Base.next(x::AbstractFixedSizeDict, state)
     index, ks = state
@@ -97,46 +105,34 @@ function Base.done(x::AbstractFixedSizeDict, state)
     length(x) > state[1]
 end
 
-
-@generated function Base.getindex{T<:AbstractFixedSizeDict, Key}(
-        sd::T, ::Type{Val{Key}}
-    )
-    index = findfirst(keys(T), Val{Key}) # lookup position of symbol
-    index == 0 && throw(KeyError("key $Key not found in $sd"))
-    :(@inbounds return sd.values[$index])
+# k should be typed, but that gives weird behaviour on 0.5
+function getindex{Keys, Key}(sd::AbstractFixedSizeDict{Keys}, k::Val{Key})
+    @inbounds return sd.values[key2index(sd, k)]
 end
 
-@generated function Base.setindex!{T<:FixedKeyDict, Key}(
-        sd::T, value, ::Type{Val{Key}}
-    )
-    index = findfirst(keys(T), Val{Key})
-    index == 0 && throw(KeyError("key $Key not found in $sd"))
-    :(@inbounds return sd.values[$index] = value)
+function setindex!{Keys, Key}(sd::FixedKeyDict{Keys}, value, k::Val{Key})
+    @inbounds return sd.values[key2index(sd, k)] = value
 end
 
-
-function get{T<:AbstractFixedSizeDict, Key}(f::Function, sd::T, k::Type{Val{Key}})
+function get{Keys}(f::Function, sd::AbstractFixedSizeDict{Keys}, k)
     if haskey(sd, k)
-        sd[k]
-    else
-        f()
+        return sd[k]
     end
+    f()
 end
-function get{T<:AbstractFixedSizeDict, Key}(sd::T, k::Type{Val{Key}}, default)
+function get{Keys}(sd::AbstractFixedSizeDict{Keys}, k, default)
     if haskey(sd, k)
-        sd[k]
-    else
-        default
+        return sd[k]
     end
+    default
 end
-
 
 
 """
 generates the expression to acces a field of a dict via a Val{Symbol}
 """
 function getfield_expr(dict, key)
-    :($dict[Val{$key}])
+    :($dict[Val{$key}()])
 end
 
 """
@@ -156,6 +152,9 @@ macro get(expr)
     end
 end
 
+
+# we need to redefine equality, since dicts with the same set of keys and values should
+# match regardless of order
 function (==)(a::AbstractFixedSizeDict, b::AbstractFixedSizeDict)
     for (key, value) in a
         if haskey(b, key)
