@@ -5,9 +5,8 @@ using BaseTestNext
 function test_fixedkeyvalue(kvdict)
 
     @test kvdict[Val{:a}()] == 22
-    @test kvdict[Val{:b}()] == 3f0
+    @test @get(kvdict.b) == 3f0
     @test kvdict[Val{:c}()] == 3f0
-
 
 
     @test haskey(kvdict, Val{:a}()) == true
@@ -32,12 +31,14 @@ end
     @test kvdict == FixedKeyValueDict(:a => 22, :b => 3f0, :c => 3f0)
     @test kvdict == FixedKeyValueDict((:a, :b, :c), (22, 3f0, 3f0))
     @test kvdict == FixedKeyValueDict(Dict(:a => 22, :b => 3f0, :c => 3f0))
+    @test kvdict != FixedKeyDict(Dict(:a => 33, :b => 3f0, :c => 3f0))
 
     @test FixedSizeDictionaries.key2index(kvdict, Val{:a}()) == 1
     @test FixedSizeDictionaries.key2index(kvdict, Val{:b}()) == 2
     @test FixedSizeDictionaries.key2index(kvdict, Val{:c}()) == 3
     @test keys(kvdict) == (Val{:a}(), Val{:b}(), Val{:c}())
     @test values(kvdict) == (22, 3f0, 3f0)
+
 
     # test 2 times to make sure nothing gets compiled and different dicts
     # don't influence each other (method table is global state)
@@ -58,6 +59,7 @@ end
 
 end
 
+FixedSizeDictionaries.FixedKeyDict{Tuple{Val{:a},Val{:b},Val{:c}},Array{Any,1}}((Val{:a}(),Val{:b}(),Val{:c}()),Any[22,3.0,3.0]) != FixedSizeDictionaries.FixedKeyDict{Tuple{Val{:c},Val{:a},Val{:b}},Array{Any,1}}((Val{:c}(),Val{:a}(),Val{:b}()),Any[3.0,33,3.0])
 
 @testset "FixedKeyDict" begin
 
@@ -67,11 +69,14 @@ end
     @test kvdict == FixedKeyDict((:a, :b, :c), [22, 3f0, 3f0])
     @test kvdict == FixedKeyDict(Dict(:a => 22, :b => 3f0, :c => 3f0))
 
+    @test kvdict != FixedKeyDict(Dict(:a => 33, :b => 3f0, :c => 3f0))
+
 
     @test FixedSizeDictionaries.key2index(kvdict, Val{:a}()) == 1
     @test FixedSizeDictionaries.key2index(kvdict, Val{:b}()) == 2
     @test FixedSizeDictionaries.key2index(kvdict, Val{:c}()) == 3
     @test keys(kvdict) == (Val{:a}(), Val{:b}(), Val{:c}())
+    @test keys(typeof(kvdict)) == (Val{:a}(), Val{:b}(), Val{:c}())
     @test values(kvdict) == [22, 3f0, 3f0]
 
 
@@ -105,5 +110,12 @@ end
         "u do this"
     end
     @test val == "u do this"
+
+    @test_throws ArgumentError @get(kvdict[x])
+    # try
+    #     @get(kvdict[x])
+    # catch e
+    #     @test isa(e, ArgumentError)
+    # end
 
 end

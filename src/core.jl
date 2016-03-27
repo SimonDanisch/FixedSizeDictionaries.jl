@@ -99,10 +99,10 @@ function Base.start(x::AbstractFixedSizeDict)
 end
 function Base.next(x::AbstractFixedSizeDict, state)
     index, ks = state
-    (ks[index], x[index]), (index+1, ks)
+    (ks[index], x.values[index]), (index+1, ks)
 end
 function Base.done(x::AbstractFixedSizeDict, state)
-    length(x) > state[1]
+    state[1] > length(x)
 end
 
 # k should be typed, but that gives weird behaviour on 0.5
@@ -146,19 +146,23 @@ macro get(expr)
         getfieldex = getfield_expr(fieldexpr.args...)
         return esc(Expr(:(=), getfieldex, val))
     else
-        throw(
-            ArgumentError("Expression of the form $expr not allowed. Try a.key, or a.key=value")
-        )
+        quote
+            errored_expr = $(string(expr))
+            throw(ArgumentError(
+                "Expression of the form $errored_expr not allowed. Try a.key, or a.key=value"
+            ))
+        end
     end
 end
 
 
 # we need to redefine equality, since dicts with the same set of keys and values should
 # match regardless of order
-function (==)(a::AbstractFixedSizeDict, b::AbstractFixedSizeDict)
+function ==(a::AbstractFixedSizeDict, b::AbstractFixedSizeDict)
+    length(a) == length(b) || return false # if not same length, can't be equal
     for (key, value) in a
         if haskey(b, key)
-            value != b[key] && return false
+            value == b[key] || return false # if not same value, they no equal!
         else
             return false
         end
