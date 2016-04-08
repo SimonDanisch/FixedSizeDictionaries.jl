@@ -7,7 +7,7 @@
 # FixedSizeDictionaries
 
 Library which implements a FixedSize variant of Dictionaries.
-These can be stack allocated and have `O(1)` indexing performance without boundcheck
+These can be stack allocated and have `O(1)` indexing performance without boundcheck.
 It implements most parts of the `Base.Dict` interface.
 This package is useful, when you basically want anonymous composite types.
 You should be a bit carefull with generating a lot of FixedSizeDict's, since
